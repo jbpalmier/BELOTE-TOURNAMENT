@@ -1,20 +1,15 @@
-# ---- Build stage ----
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
+RUN echo "USING ROOT DOCKERFILE v2"
 
-# Copy solution + sources from backend/
 COPY backend/BeloteTournament.sln ./BeloteTournament.sln
 COPY backend/src ./src
 
 RUN dotnet restore
 RUN dotnet publish ./src/BeloteTournament.Api/BeloteTournament.Api.csproj -c Release -o /app/publish
 
-# ---- Runtime stage ----
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
-
 ENV ASPNETCORE_URLS=http://0.0.0.0:${PORT}
-
 COPY --from=build /app/publish ./
-
 ENTRYPOINT ["dotnet", "BeloteTournament.Api.dll"]
