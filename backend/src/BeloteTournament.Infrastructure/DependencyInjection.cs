@@ -12,11 +12,15 @@ public static class DependencyInjection
         IConfiguration configuration
     )
     {
-        var connectionString =
-            configuration.GetConnectionString("Sqlite")
-            ?? throw new InvalidOperationException("ConnectionStrings:Sqlite manquante.");
+        var cs = configuration.GetConnectionString("Sqlite");
+        if (string.IsNullOrWhiteSpace(cs))
+            throw new InvalidOperationException("ConnectionStrings:Sqlite est manquante.");
 
-        services.AddDbContext<AppDbContext>(options => options.UseSqlite(connectionString));
+        // Enregistre le DbContext
+        services.AddDbContext<AppDbContext>(options => options.UseSqlite(cs));
+
+        // Enregistre aussi la factory (utile pour migrations + workers)
+        services.AddDbContextFactory<AppDbContext>(options => options.UseSqlite(cs));
 
         return services;
     }
