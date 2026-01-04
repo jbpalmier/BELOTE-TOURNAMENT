@@ -1,0 +1,78 @@
+.page {
+  padding: 0;
+}
+.header h1 {
+  margin: 0 0 8px;
+}
+.hint {
+  margin: 0 0 16px;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.spacer {
+  flex: 1;
+}
+
+button {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  background: #f7f7f7;
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.warning {
+  padding: 12px;
+  border-radius: 10px;
+  background: #fff7e6;
+  border: 1px solid #ffe4b5;
+}
+.error {
+  color: #b00020;
+  margin-top: 8px;
+}
+
+.round {
+  margin-top: 16px;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+}
+.table th,
+.table td {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+  text-align: left;
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+select {
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+}

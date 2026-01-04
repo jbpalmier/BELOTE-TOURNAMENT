@@ -1,0 +1,100 @@
+<div class="page">
+  <header class="header">
+    <section class="card">
+      <h1>Planning (5 manches)</h1>
+      <p class="hint">
+        {{ teamsCount() }} équipe(s) —
+        <strong *ngIf="canGenerate(); else notReady">prêt</strong>
+        <ng-template #notReady><strong>non prêt</strong> (min 10 et nombre pair)</ng-template>
+      </p>
+    </section>
+  </header>
+
+  <section class="card">
+    <div class="toolbar">
+      <button class="btn" (click)="refreshTeams()" [disabled]="loading()">
+        Rafraîchir équipes
+      </button>
+      <button class="btn primary" (click)="generate()" [disabled]="loading() || !canGenerate()">
+        Générer le planning
+      </button>
+      <button class="btn" (click)="downloadPdf()" [disabled]="loading() || !schedule()">
+        Exporter PDF
+      </button>
+      <div class="spacer"></div>
+
+      <button class="btn" (click)="switchView('rounds')" [disabled]="!schedule()">
+        Vue par manches
+      </button>
+      <button class="btn" (click)="switchView('team')" [disabled]="!schedule()">
+        Vue par équipe
+      </button>
+    </div>
+
+    <p class="error" *ngIf="error()">{{ error() }}</p>
+
+    <div class="warning" *ngIf="!canGenerate()">
+      <p>
+        Ajoute des équipes pour pouvoir générer.
+        <a routerLink="/teams">Aller à la page Équipes</a>
+      </p>
+    </div>
+  </section>
+
+  <section class="card" *ngIf="schedule() as s">
+    <!-- Vue par manches -->
+    <ng-container *ngIf="viewMode() === 'rounds'">
+      <div class="round" *ngFor="let r of s.rounds">
+        <h2>Manche {{ r.round }}</h2>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Table</th>
+              <th>Équipe A</th>
+              <th>Équipe B</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let m of r.matches">
+              <td>{{ m.table }}</td>
+              <td>{{ m.teamA.name }}</td>
+              <td>{{ m.teamB.name }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </ng-container>
+
+    <!-- Vue par équipe -->
+    <ng-container *ngIf="viewMode() === 'team'">
+      <div class="row">
+        <label>
+          Équipe :
+          <select [(ngModel)]="selectedTeamId">
+            <option *ngFor="let t of teams()" [value]="t.id">{{ t.name }}</option>
+          </select>
+        </label>
+      </div>
+
+      <div *ngIf="selectedTeam() as t">
+        <h2>{{ t.name }}</h2>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Manche</th>
+              <th>Table</th>
+              <th>Adversaire</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let m of byTeam()">
+              <td>{{ m.round }}</td>
+              <td>{{ m.table }}</td>
+              <td>{{ m.opponentName }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </ng-container>
+  </section>
+</div>

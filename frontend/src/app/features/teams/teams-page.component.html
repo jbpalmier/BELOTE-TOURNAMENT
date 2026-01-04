@@ -1,0 +1,97 @@
+<section class="card">
+  <div class="row">
+    <div>
+      <h1 class="h1">Équipes</h1>
+      <p class="subtle">
+        Minimum <strong>10</strong> équipes et nombre <strong>pair</strong> pour générer le
+        planning.
+      </p>
+    </div>
+    <div class="spacer"></div>
+
+    <span class="chip" [class.ok]="canGenerate()" [class.warn]="!canGenerate()">
+      {{ teamsCount() }} équipe(s) — {{ canGenerate() ? 'Prêt' : 'Non prêt' }}
+    </span>
+  </div>
+</section>
+
+<section class="card" style="margin-top: 14px">
+  <div class="row">
+    <input
+      class="input"
+      type="text"
+      placeholder="Nom de l'équipe (ex: Les As)"
+      [(ngModel)]="newName"
+      (keydown.enter)="addTeam()"
+      maxlength="40"
+    />
+
+    <button class="btn primary" (click)="addTeam()" [disabled]="loading()">Ajouter</button>
+    <button class="btn" (click)="refresh()" [disabled]="loading()">Rafraîchir</button>
+    <a
+      class="btn"
+      routerLink="/schedule"
+      [class.disabled]="!canGenerate()"
+      [attr.aria-disabled]="!canGenerate()"
+    >
+      Aller au planning
+    </a>
+
+    <div class="spacer"></div>
+
+    <button
+      class="btn danger"
+      (click)="askDeleteAll()"
+      [disabled]="loading() || teamsCount() === 0"
+    >
+      Supprimer toutes les équipes
+    </button>
+  </div>
+
+  <div style="margin-top: 12px" *ngIf="error()" class="error">{{ error() }}</div>
+</section>
+
+<section class="card" style="margin-top: 14px">
+  <div class="row" style="margin-bottom: 10px">
+    <h2 style="margin: 0">Liste</h2>
+  </div>
+
+  <table class="table" *ngIf="teams().length > 0; else empty">
+    <thead>
+      <tr>
+        <th>Nom</th>
+        <th style="width: 1%"></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let t of teams()">
+        <td>{{ t.name }}</td>
+        <td>
+          <button class="btn danger" (click)="askDeleteOne(t)" [disabled]="loading()">
+            Supprimer
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <ng-template #empty>
+    <p class="subtle">Aucune équipe pour le moment.</p>
+  </ng-template>
+</section>
+
+<!-- MODALE -->
+<dialog #confirmDialog class="confirm-dialog">
+  <form method="dialog" class="confirm-card">
+    <h3>{{ confirmTitle() }}</h3>
+    <p class="subtle">{{ confirmMessage() }}</p>
+
+    <div class="row" style="margin-top: 14px">
+      <button class="btn" type="button" (click)="cancel()">Annuler</button>
+      <div class="spacer"></div>
+      <button class="btn" [class.danger]="confirmDanger()" type="button" (click)="confirm()">
+        Confirmer
+      </button>
+    </div>
+  </form>
+</dialog>
