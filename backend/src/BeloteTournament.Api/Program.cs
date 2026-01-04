@@ -35,9 +35,19 @@ var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
-    var factory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<AppDbContext>>();
-    using var db = factory.CreateDbContext();
-    db.Database.Migrate();
+    // 1) Essaie via factory si elle existe
+    var factory = scope.ServiceProvider.GetService<IDbContextFactory<AppDbContext>>();
+    if (factory is not null)
+    {
+        using var db = factory.CreateDbContext();
+        db.Database.Migrate();
+    }
+    else
+    {
+        // 2) Sinon via DbContext classique
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.Database.Migrate();
+    }
 }
 
 app.UseSwagger();
