@@ -1,3 +1,4 @@
 export const environment = {
-  apiUrl: 'https://belote-tournament-production.up.railway.app/',
+  production: false,
+  apiUrl: 'https://belote-tournament-production.up.railway.app',
 };
