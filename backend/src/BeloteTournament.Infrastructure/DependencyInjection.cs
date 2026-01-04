@@ -5,9 +5,6 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace BeloteTournament.Infrastructure;
 
-/// <summary>
-/// Enregistrement des dépendances Infrastructure (DB, repos...).
-/// </summary>
 public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(
@@ -15,12 +12,11 @@ public static class DependencyInjection
         IConfiguration configuration
     )
     {
-        var cs = configuration.GetConnectionString("Sqlite");
+        var connectionString =
+            configuration.GetConnectionString("Sqlite")
+            ?? throw new InvalidOperationException("ConnectionStrings:Sqlite manquante.");
 
-        if (string.IsNullOrWhiteSpace(cs))
-            throw new InvalidOperationException("Connection string 'Sqlite' manquante.");
-
-        services.AddDbContext<AppDbContext>(options => options.UseSqlite(cs));
+        services.AddDbContext<AppDbContext>(options => options.UseSqlite(connectionString));
 
         return services;
     }
