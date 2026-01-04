@@ -1,4 +1,6 @@
 using BeloteTournament.Infrastructure;
+using BeloteTournament.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 var port = Environment.GetEnvironmentVariable("PORT");
@@ -30,9 +32,6 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
-
-using BeloteTournament.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 
 using (var scope = app.Services.CreateScope())
 {
