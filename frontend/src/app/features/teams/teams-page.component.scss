@@ -93,3 +93,10 @@ a.btn.disabled {
   pointer-events: none;
   opacity: 0.55;
 }
+
+/* Grid des équipes générées */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+}
