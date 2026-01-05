@@ -21,7 +21,7 @@ export class TeamsPageComponent {
   error = signal<string | null>(null);
 
   // Generator state
-  teamCountInput = signal<string>('10'); // texte -> digits only
+  teamCountInput = signal<string>('10');
   generatedNames = signal<string[]>([]);
   bulkError = signal<string | null>(null);
 
@@ -99,7 +99,7 @@ export class TeamsPageComponent {
     }
 
     // Par défaut : nom = numéro ("1", "2", ...)
-    const names = Array.from({ length: n }, (_, i) => String(i + 1));
+    const names = Array.from({ length: n }, (_, i) => `E${i + 1}`);
     this.generatedNames.set(names);
   }
 

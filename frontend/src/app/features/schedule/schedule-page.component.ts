@@ -1,7 +1,7 @@
 import { Component, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { FormsModule } from '@angular/forms'; // 👈 OBLIGATOIRE
+import { FormsModule } from '@angular/forms'; 
 import { ApiService, ScheduleResponse, TeamDto } from '../../core/api/api.service';
 
 type TeamMatchView = {
