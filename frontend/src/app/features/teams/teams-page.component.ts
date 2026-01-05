@@ -1,8 +1,9 @@
-import { Component, inject, signal, computed, ViewChild, ElementRef } from '@angular/core';
+import { Component, ElementRef, ViewChild, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService, TeamDto } from '../../core/api/api.service';
 import { RouterLink } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
+import { ApiService, TeamDto } from '../../core/api/api.service';
 
 @Component({
   selector: 'app-teams-page',
@@ -14,33 +15,53 @@ import { RouterLink } from '@angular/router';
 export class TeamsPageComponent {
   private readonly api = inject(ApiService);
 
-  // data
+  // API state
   teams = signal<TeamDto[]>([]);
   loading = signal(false);
   error = signal<string | null>(null);
 
-  // form
-  newName = signal('');
+  // Generator state
+  teamCountInput = signal<string>('10'); // texte -> digits only
+  generatedNames = signal<string[]>([]);
+  bulkError = signal<string | null>(null);
 
-  teamsCount = computed(() => this.teams().length);
-  canGenerate = computed(() => this.teamsCount() >= 10 && this.teamsCount() % 2 === 0);
-
-  // confirmation dialog
-  @ViewChild('confirmDialog')
-  confirmDialog!: ElementRef<HTMLDialogElement>;
-
+  // Confirm dialog
+  @ViewChild('confirmDialog') confirmDialog!: ElementRef<HTMLDialogElement>;
   confirmTitle = signal('Confirmation');
   confirmMessage = signal('');
   confirmDanger = signal(false);
-
   private confirmAction: (() => void) | null = null;
 
-  // lifecycle
+  // Computeds
+  teamsCount = computed(() => this.teams().length);
+
+  // Le tournoi est “prêt” si au moins 10 équipes et nombre pair (côté existant)
+  canGenerateSchedule = computed(() => {
+    const n = this.teamsCount();
+    return n >= 10 && n % 2 === 0;
+  });
+
+  // Validation du champ “Nombre d’équipes”
+  desiredCount = computed(() => {
+    const raw = this.teamCountInput().trim();
+    if (!raw) return null;
+    const n = Number(raw);
+    if (!Number.isInteger(n)) return null;
+    return n;
+  });
+
+  isDesiredCountValid = computed(() => {
+    const n = this.desiredCount();
+    return n !== null && n >= 10 && n % 2 === 0;
+  });
+
   ngOnInit() {
     this.refresh();
   }
 
-  // API calls
+  // -------------------------
+  // Data
+  // -------------------------
   refresh() {
     this.loading.set(true);
     this.error.set(null);
@@ -57,28 +78,103 @@ export class TeamsPageComponent {
     });
   }
 
-  addTeam() {
-    const name = this.newName().trim();
-    if (!name) return;
-
-    this.loading.set(true);
-    this.error.set(null);
-
-    this.api.createTeam({ name }).subscribe({
-      next: () => {
-        this.newName.set('');
-        this.refresh();
-      },
-      error: (err) => {
-        this.loading.set(false);
-        this.error.set(
-          err?.status === 409 ? "Nom d'équipe déjà utilisé." : "Erreur lors de l'ajout."
-        );
-      },
-    });
+  // -------------------------
+  // Generator
+  // -------------------------
+  onCountInput(ev: Event) {
+    // Garder uniquement les chiffres
+    const input = ev.target as HTMLInputElement;
+    const digitsOnly = (input.value ?? '').replace(/[^\d]/g, '');
+    input.value = digitsOnly;
+    this.teamCountInput.set(digitsOnly);
   }
 
-  // ---- DELETE ONE ----
+  generateList() {
+    this.bulkError.set(null);
+
+    const n = this.desiredCount();
+    if (n === null || n < 10 || n % 2 !== 0) {
+      this.bulkError.set('Le nombre d’équipes doit être un entier pair, minimum 10.');
+      return;
+    }
+
+    // Par défaut : nom = numéro ("1", "2", ...)
+    const names = Array.from({ length: n }, (_, i) => String(i + 1));
+    this.generatedNames.set(names);
+  }
+
+  updateGeneratedName(index: number, value: string) {
+    const list = [...this.generatedNames()];
+    list[index] = value;
+    this.generatedNames.set(list);
+  }
+
+  clearGenerated() {
+    this.generatedNames.set([]);
+    this.bulkError.set(null);
+  }
+
+  private validateGeneratedNames(names: string[]): string | null {
+    const trimmed = names.map((n) => (n ?? '').trim()).filter((n) => n.length > 0);
+
+    if (trimmed.length !== names.length) {
+      return 'Tous les noms doivent être renseignés (pas de champ vide).';
+    }
+
+    // Doublons (case-insensitive)
+    const lower = trimmed.map((n) => n.toLowerCase());
+    if (new Set(lower).size !== lower.length) {
+      return 'Il y a des doublons dans les noms. Corrige-les avant de valider.';
+    }
+
+    // Longueur max côté Domain (si tu as mis 40)
+    const tooLong = trimmed.find((n) => n.length > 40);
+    if (tooLong) return 'Un nom dépasse 40 caractères.';
+
+    return null;
+  }
+
+  async createAllGenerated() {
+    this.bulkError.set(null);
+    this.error.set(null);
+
+    const names = this.generatedNames();
+    if (names.length === 0) {
+      this.bulkError.set('Génère d’abord une liste d’équipes.');
+      return;
+    }
+
+    const validationError = this.validateGeneratedNames(names);
+    if (validationError) {
+      this.bulkError.set(validationError);
+      return;
+    }
+
+    this.loading.set(true);
+
+    // Création en série (plus stable, évite de spammer l’API)
+    for (const name of names) {
+      try {
+        await firstValueFrom(this.api.createTeam({ name: name.trim() }));
+      } catch (e: any) {
+        this.loading.set(false);
+        this.bulkError.set(
+          e?.status === 409
+            ? `Conflit : le nom "${name}" existe déjà.`
+            : `Erreur lors de la création de "${name}".`
+        );
+        return;
+      }
+    }
+
+    this.loading.set(false);
+    this.clearGenerated();
+    this.refresh();
+  }
+
+  // -------------------------
+  // Delete (with confirm modal)
+  // -------------------------
   askDeleteOne(team: TeamDto) {
     this.openConfirm("Supprimer l'équipe", `Supprimer définitivement “${team.name}” ?`, true, () =>
       this.deleteTeam(team.id)
@@ -98,7 +194,6 @@ export class TeamsPageComponent {
     });
   }
 
-  // ---- DELETE ALL ----
   askDeleteAll() {
     const count = this.teamsCount();
     if (count === 0) return;
@@ -124,7 +219,9 @@ export class TeamsPageComponent {
     });
   }
 
-  // ---- MODAL ----
+  // -------------------------
+  // Modal helpers
+  // -------------------------
   openConfirm(title: string, message: string, danger: boolean, action: () => void) {
     this.confirmTitle.set(title);
     this.confirmMessage.set(message);

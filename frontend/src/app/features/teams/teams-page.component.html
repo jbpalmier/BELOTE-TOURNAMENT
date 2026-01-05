@@ -1,43 +1,78 @@
+<!-- Header -->
 <section class="card">
   <div class="row">
     <div>
       <h1 class="h1">Équipes</h1>
       <p class="subtle">
-        Minimum <strong>10</strong> équipes et nombre <strong>pair</strong> pour générer le
-        planning.
+        Saisis un <strong>nombre pair</strong> (minimum <strong>10</strong>), génère la liste puis
+        modifie les noms si besoin.
       </p>
     </div>
+
     <div class="spacer"></div>
 
-    <span class="chip" [class.ok]="canGenerate()" [class.warn]="!canGenerate()">
-      {{ teamsCount() }} équipe(s) — {{ canGenerate() ? 'Prêt' : 'Non prêt' }}
+    <span class="chip" [class.ok]="canGenerateSchedule()" [class.warn]="!canGenerateSchedule()">
+      {{ teamsCount() }} équipe(s) —
+      {{ canGenerateSchedule() ? 'Prêt pour le planning' : 'Min 10 et pair' }}
     </span>
   </div>
 </section>
 
+<!-- Generator -->
 <section class="card" style="margin-top: 14px">
-  <div class="row">
-    <input
-      class="input"
-      type="text"
-      placeholder="Nom de l'équipe (ex: Les As)"
-      [(ngModel)]="newName"
-      (keydown.enter)="addTeam()"
-      maxlength="40"
-    />
+  <div class="row" style="align-items: flex-end">
+    <div style="min-width: 260px">
+      <label class="subtle" style="display: block; margin-bottom: 6px">
+        Nombre d’équipes (pair, ≥ 10)
+      </label>
 
-    <button class="btn primary" (click)="addTeam()" [disabled]="loading()">Ajouter</button>
-    <button class="btn" (click)="refresh()" [disabled]="loading()">Rafraîchir</button>
+      <input
+        class="input"
+        [value]="teamCountInput()"
+        (input)="onCountInput($event)"
+        inputmode="numeric"
+        pattern="[0-9]*"
+        placeholder="Ex: 20"
+      />
+
+      <div class="subtle" style="margin-top: 6px">
+        Statut :
+        <strong>{{ isDesiredCountValid() ? 'valide' : 'invalide' }}</strong>
+      </div>
+    </div>
+
+    <button class="btn" (click)="generateList()" [disabled]="loading() || !isDesiredCountValid()">
+      Générer la liste
+    </button>
+
+    <button
+      class="btn primary"
+      (click)="createAllGenerated()"
+      [disabled]="loading() || generatedNames().length === 0"
+    >
+      Créer toutes les équipes
+    </button>
+
+    <button
+      class="btn"
+      (click)="clearGenerated()"
+      [disabled]="loading() || generatedNames().length === 0"
+    >
+      Effacer
+    </button>
+
+    <div class="spacer"></div>
+
     <a
       class="btn"
       routerLink="/schedule"
-      [class.disabled]="!canGenerate()"
-      [attr.aria-disabled]="!canGenerate()"
+      [class.disabled]="!canGenerateSchedule()"
+      [attr.aria-disabled]="!canGenerateSchedule()"
     >
       Aller au planning
     </a>
 
-    <div class="spacer"></div>
+    <button class="btn" (click)="refresh()" [disabled]="loading()">Rafraîchir</button>
 
     <button
       class="btn danger"
@@ -48,12 +83,37 @@
     </button>
   </div>
 
+  <div style="margin-top: 12px" *ngIf="bulkError()" class="error">{{ bulkError() }}</div>
   <div style="margin-top: 12px" *ngIf="error()" class="error">{{ error() }}</div>
+
+  <div *ngIf="generatedNames().length > 0" style="margin-top: 14px">
+    <p class="subtle" style="margin-top: 0">
+      Noms par défaut = le numéro. Tu peux les modifier avant validation.
+    </p>
+
+    <div class="grid">
+      <div class="mini-card" *ngFor="let name of generatedNames(); let i = index">
+        <div class="mini-head">
+          <span class="chip">#{{ i + 1 }}</span>
+        </div>
+
+        <input
+          class="input"
+          [value]="name"
+          (input)="updateGeneratedName(i, $any($event.target).value)"
+          placeholder="Nom de l’équipe"
+        />
+      </div>
+    </div>
+  </div>
 </section>
 
+<!-- Existing teams list -->
 <section class="card" style="margin-top: 14px">
   <div class="row" style="margin-bottom: 10px">
-    <h2 style="margin: 0">Liste</h2>
+    <h2 style="margin: 0">Équipes enregistrées</h2>
+    <div class="spacer"></div>
+    <span class="subtle">Suppression avec confirmation.</span>
   </div>
 
   <table class="table" *ngIf="teams().length > 0; else empty">
@@ -80,10 +140,10 @@
   </ng-template>
 </section>
 
-<!-- MODALE -->
+<!-- Confirm Modal -->
 <dialog #confirmDialog class="confirm-dialog">
   <form method="dialog" class="confirm-card">
-    <h3>{{ confirmTitle() }}</h3>
+    <h3 style="margin-top: 0">{{ confirmTitle() }}</h3>
     <p class="subtle">{{ confirmMessage() }}</p>
 
     <div class="row" style="margin-top: 14px">

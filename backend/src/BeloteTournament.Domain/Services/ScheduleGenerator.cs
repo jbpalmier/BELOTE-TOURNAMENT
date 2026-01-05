@@ -41,7 +41,7 @@ public sealed class ScheduleGenerator
                 matches.Add((teamA, teamB));
             }
 
-            // 2️⃣ Shuffle des matchs (tables aléatoires)
+            // Shuffle des matchs (tables aléatoires)
             matches = matches.OrderBy(_ => rng.Next()).ToList();
 
             var roundMatches = matches
@@ -50,7 +50,7 @@ public sealed class ScheduleGenerator
 
             rounds.Add(new Round(roundIndex + 1, roundMatches));
 
-            // 3️⃣ Rotation circulaire (sans équipe fixe)
+            // Rotation circulaire (sans équipe fixe)
             var last = teamIds[^1];
             teamIds.RemoveAt(teamIds.Count - 1);
             teamIds.Insert(1, last);
